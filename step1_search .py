@@ -15,21 +15,39 @@ from pypdf import PdfReader
 DOCS_FOLDER = "docs"
 CHUNK_SIZE = 800      # characters per chunk
 CHUNK_OVERLAP = 150   # characters shared between neighbouring chunks
-TOP_K = 3             # how many chunks to show for each question
+TOP_K = 5             # how many chunks to show for each question
 
 _model = None
+_kind = None
+
+
+def _load_model():
+    """Use sentence-transformers if it is installed (local use), otherwise the
+    much lighter FastEmbed (used on free hosting, which has little memory)."""
+    try:
+        from sentence_transformers import SentenceTransformer
+
+        print("Loading embedding model (first time takes a minute)...")
+        return "sentence-transformers", SentenceTransformer("all-MiniLM-L6-v2")
+    except ImportError:
+        from fastembed import TextEmbedding
+
+        print("Loading lightweight embedding model...")
+        return "fastembed", TextEmbedding("BAAI/bge-small-en-v1.5")
 
 
 def embed(texts):
     """Turn a list of texts into vectors (numbers that capture meaning)."""
-    global _model
+    global _model, _kind
     if _model is None:
-        from sentence_transformers import SentenceTransformer
-
-        print("Loading embedding model (first time takes a minute)...")
-        _model = SentenceTransformer("all-MiniLM-L6-v2")
-    vectors = _model.encode(texts, normalize_embeddings=True, show_progress_bar=False)
-    return np.array(vectors, dtype="float32")
+        _kind, _model = _load_model()
+    if _kind == "sentence-transformers":
+        vectors = _model.encode(texts, show_progress_bar=False)
+    else:
+        vectors = list(_model.embed(texts))
+    vectors = np.array(vectors, dtype="float32")
+    norms = np.linalg.norm(vectors, axis=1, keepdims=True)
+    return vectors / np.maximum(norms, 1e-9)  # normalise so inner product = cosine similarity
 
 
 def load_pdfs(folder):

@@ -2,20 +2,22 @@
 
 A chatbot that answers questions from your own PDF documents and shows exactly which file and page each answer came from. Built with Retrieval-Augmented Generation (RAG): it finds the relevant passages first, then asks an LLM to answer using only those passages.
 
+🔗 **Live demo:** _add your link here after deploying_
+
 ![App screenshot](images/chat.png)
 
 ## How it works
 
 1. **Read:** extracts text from every page of the PDFs.
 2. **Chunk:** splits pages into overlapping pieces of about 800 characters, remembering the file name and page number of each piece.
-3. **Embed:** converts each chunk into a vector with the `all-MiniLM-L6-v2` sentence-transformer model.
+3. **Embed:** converts each chunk into a vector. Locally it uses the `all-MiniLM-L6-v2` sentence-transformer model if installed; otherwise (for example on free hosting with little memory) it uses the lightweight `bge-small-en-v1.5` model through FastEmbed.
 4. **Retrieve:** for each question, finds the most similar chunks using a FAISS vector index.
 5. **Generate:** sends the question and the retrieved chunks to Google Gemini, which is told to answer only from that context (or say it can't find the answer).
 6. **Cite:** shows the answer together with the source files, pages and passage previews.
 
 ## Tech stack
 
-Python, pypdf, sentence-transformers, FAISS, Google Gemini API, Streamlit
+Python, pypdf, sentence-transformers / FastEmbed, FAISS, Google Gemini API, Streamlit
 
 ## Project structure
 
@@ -44,6 +46,7 @@ venv\Scripts\activate          # Windows
 
 # 3. Install dependencies
 python -m pip install -r requirements.txt
+#    (optional, for the larger local embedding model: python -m pip install sentence-transformers)
 
 # 4. Add your free Gemini API key (from aistudio.google.com)
 #    Create a file named .env containing:

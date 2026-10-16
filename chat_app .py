@@ -31,10 +31,13 @@ def get_api_key():
         return None
 
 
+MAX_CHUNKS = 3000  # keeps memory use low on free hosting
+
+
 def make_index(pages):
     if not pages:
         return None, None
-    chunks = split_into_chunks(pages)
+    chunks = split_into_chunks(pages)[:MAX_CHUNKS]
     return build_index(chunks), chunks
 
 
